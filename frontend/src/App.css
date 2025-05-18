@@ -1,0 +1,248 @@
+.form-container {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 6px;
+    box-shadow: 0 0 10px #ccc;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+  
+  input {
+    width: 100%;
+    padding: 8px;
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  
+  .stop-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  button {
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  
+  .app {
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .map-container {
+    margin-top: 20px;
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+  }
+
+  .error {
+    color: red;
+    padding: 20px;
+    border: 1px solid red;
+  }
+  
+  .map-container {
+    min-height: 300px;
+    background: #f0f0f0;
+    display: grid;
+    place-items: center;
+  }
+
+  .text-route {
+    padding: 20px;
+    border: 1px solid #eee;
+    margin-top: 20px;
+  }
+  .text-route ol {
+    padding-left: 20px;
+  }
+
+  .loading {
+    padding: 1rem;
+    color: #555;
+    font-style: italic;
+  }
+  
+  .error {
+    padding: 1rem;
+    color: #d32f2f;
+    background: #ffebee;
+    border-radius: 4px;
+    margin: 1rem 0;
+  }
+  
+  .error small {
+    opacity: 0.8;
+  }
+
+  .loading {
+    padding: 1rem;
+    color: #555;
+    font-style: italic;
+  }
+  
+  .error {
+    padding: 1rem;
+    color: #d32f2f;
+    background: #ffebee;
+    border-radius: 4px;
+    margin: 1rem 0;
+  }
+
+  .app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  
+  .subtitle {
+    color: #666;
+    margin-top: -0.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .content-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .form-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .results-section {
+    min-height: 300px;
+    position: relative;
+  }
+  
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(0,0,0,0.1);
+    border-radius: 50%;
+    border-top-color: #007bff;
+    animation: spin 1s ease-in-out infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 4px;
+  }
+
+  /* Add to existing App.css */
+.comparison-container {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.compare-button {
+  padding: 0.75rem 1.5rem;
+  background: #4a6fa5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.compare-button:hover {
+  background: #3a5a80;
+}
+
+.compare-button:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+.results-table {
+  width: 100%;
+  margin-top: 1rem;
+  border-collapse: collapse;
+}
+
+.results-table th, 
+.results-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.results-table th {
+  background-color: #f2f2f2;
+  font-weight: 600;
+}
+
+.results-table tr.recommended {
+  background-color: #e7f3fe;
+}
+
+.path-cell {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.algorithm-selector {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.algorithm-selector label {
+  margin-right: 1rem;
+  font-weight: 600;
+}
+
+.algorithm-dropdown {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  min-width: 200px;
+}

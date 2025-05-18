@@ -1,0 +1,54 @@
+.route-text {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 15px;
+    border: 1px solid #4CAF50;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+  }
+  
+  .route-path {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #2c3e50;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .route-stats {
+    margin-top: 10px;
+  }
+  
+  .route-stats p {
+    margin: 5px 0;
+    color: #34495e;
+  }
+
+  .route-results {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+  
+  .route-path {
+    font-size: 1.1rem;
+    margin: 1rem 0;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+  }
+  
+  .metric {
+    display: flex;
+    margin: 0.5rem 0;
+  }
+  
+  .label {
+    font-weight: bold;
+    min-width: 100px;
+  }
+  
+  .value {
+    color: #2c3e50;
+  }
