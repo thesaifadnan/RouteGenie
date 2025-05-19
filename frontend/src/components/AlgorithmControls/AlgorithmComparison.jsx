@@ -1,88 +1,78 @@
 import React, { useState } from 'react';
 import { optimizeRoute } from '../../services/api';
 import './AlgorithmControls.css';
-
-export default function AlgorithmComparison({ source, stops, weight, vehicle }) {
+export default function AlgorithmComparison({ source, stops, weight }) {
   const [results, setResults] = useState([]);
   const [isComparing, setIsComparing] = useState(false);
   const [error, setError] = useState(null);
 
   const compareAlgorithms = async () => {
-    if (!source || stops.length === 0) {
-      setError('Please set source and stops first');
-      return;
-    }
-  
-    setIsComparing(true);
-    setError(null);
-    
     try {
+      // Validate inputs first
+      if (!source || !stops?.length || !weight) {
+        throw new Error('Please calculate a valid route first');
+      }
+
+      setIsComparing(true);
+      setError(null);
+
       const algorithms = ['auto', 'dijkstra', 'astar', 'greedy'];
-      const comparisonPromises = algorithms.map(algo => 
-        fetch('http://localhost:5001/api/optimize', { // Full backend URL
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            source, 
-            stops, 
-            weight, 
-            algorithm: algo 
-          })
-        }).then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
+      
+      const comparisonResults = await Promise.all(
+        algorithms.map(async (algorithm) => {
+          const response = await optimizeRoute({
+            source,
+            stops: [...new Set(stops)], // Remove duplicates
+            weight,
+            algorithm
+          });
+          return response;
         })
       );
-  
-      const comparisonResults = await Promise.all(comparisonPromises);
-      setResults(comparisonResults);
-    } catch (err) {
-      setError(`Comparison failed: ${err.message}`);
-      console.error('Algorithm comparison error:', err);
+
+      setResults(comparisonResults.filter(r => !r.error));
+      
+    } catch (error) {
+      setError(error.message);
+      console.error('Comparison error:', error);
     } finally {
       setIsComparing(false);
     }
   };
 
+  // Safe array access for stops
+  const safeStops = Array.isArray(stops) ? stops : [];
+
   return (
-    <div className="comparison-container">
-      <button 
+    <div className="algorithm-comparison">
+      <button className='compare-btn'
         onClick={compareAlgorithms} 
-        disabled={isComparing}
-        className="compare-button"
+        disabled={isComparing || !source || !safeStops.length}
       >
         {isComparing ? 'Comparing...' : 'Compare Algorithms'}
       </button>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="error">{error}</div>}
 
       {results.length > 0 && (
-        <div className="results-table">
-          <h3>Algorithm Comparison</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Algorithm</th>
-                <th>Distance (km)</th>
-                <th>Time (mins)</th>
-                <th>Path</th>
+        <table className="comparison-table">
+          <thead>
+            <tr>
+              <th>Algorithm</th>
+              <th>Distance (km)</th>
+              <th>Time (mins)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((result, index) => (
+              <tr key={index}>
+                <td>{result.algorithm || 'Greedy'}</td>
+                <td>{result.distance?.toFixed(2) || 'N/A'}</td>
+                <td>{result.time || 'N/A'}</td>
               </tr>
-            </thead>
-            <tbody>
-              {results.map((result, idx) => (
-                <tr key={idx} className={result.algorithm.includes('Auto') ? 'recommended' : ''}>
-                  <td>{result.algorithm}</td>
-                  <td>{result.distance.toFixed(2)}</td>
-                  <td>{result.time}</td>
-                  <td className="path-cell">
-                    {result.path.slice(0, 3).join(' → ')}
-                    {result.path.length > 3 && ' → ... → ' + result.path.slice(-1)[0]}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

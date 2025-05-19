@@ -6,66 +6,51 @@ import { locations } from './utils/graph';
 import './App.css';
 
 export default function App() {
+  const locationNames = Object.keys(locations); // Get array of location names
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState(null);
 
   const handleRouteCalculated = async (formData) => {
-    console.log("Form data received:", formData);
-    
-    if (!formData.source || typeof formData.source !== 'string') {
-      throw new Error('Invalid source location format');
-    }
-  
-    if (!Array.isArray(formData.stops) || formData.stops.some(stop => typeof stop !== 'string')) {
-      throw new Error('Invalid stops format - expected location names');
-    }
-  
     setIsLoading(true);
     setError(null);
-    
+    setFormData(formData);
+
     try {
+      // Validate stops are valid location names
+      const invalidStops = formData.stops.filter(
+        stop => !locationNames.includes(stop)
+      );
+      if (invalidStops.length > 0) {
+        throw new Error(`Invalid stops: ${invalidStops.join(', ')}`);
+      }
+
       const response = await fetch('http://localhost:5001/api/optimize', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           source: formData.source,
           stops: formData.stops,
-          weight: formData.weight,
-          algorithm: formData.algorithm || 'auto' // Ensure algorithm is always sent
+          weight: Number(formData.weight),
+          algorithm: formData.algorithm || 'auto'
         })
       });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-  
+
       const data = await response.json();
-      
-      // Validate response structure
-      const requiredFields = ['path', 'distance', 'time', 'vehicle', 'algorithm'];
-      for (const field of requiredFields) {
-        if (data[field] === undefined) {
-          throw new Error(`Missing ${field} in response`);
-        }
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Route calculation failed');
       }
 
-      if (!data.path || !Array.isArray(data.path)) {
-        throw new Error('Invalid response format from server');
+      // Validate response structure
+      if (!data.path || !data.algorithm) {
+        throw new Error('Invalid response from server');
       }
-      
+
       setResult(data);
-      setFormData(formData); // Store for comparison
     } catch (error) {
-      console.error('Route calculation failed:', {
-        error,
-        timestamp: new Date().toISOString(),
-        formData
-      });
+      console.error('Error:', error);
       setError(error.message);
       setResult(null);
     } finally {
@@ -81,7 +66,7 @@ export default function App() {
       <div className="content-area">
         <div className="form-section">
           <DeliveryForm 
-            locations={locations} 
+            locations={locationNames} 
             onRouteCalculated={handleRouteCalculated}
             isLoading={isLoading}
           />
@@ -99,9 +84,6 @@ export default function App() {
             <div className="error-message">
               <h3>Error:</h3>
               <p>{error}</p>
-              {error.includes('CORS') && (
-                <p>Please ensure the backend server is running on port 5001</p>
-              )}
             </div>
           )}
           
@@ -109,10 +91,9 @@ export default function App() {
             <>
               <RouteText result={result} />
               <AlgorithmComparison
-                source={formData.source}
-                stops={formData.stops}
-                weight={formData.weight}
-                vehicle={result.vehicle}
+                source={formData?.source}
+                stops={formData?.stops}
+                weight={formData?.weight}
               />
             </>
           )}

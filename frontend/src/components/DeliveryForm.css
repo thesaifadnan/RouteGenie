@@ -274,11 +274,11 @@
   }
   
   .remove-stop {
-    background: #ffdddd;
+    background: #c23333;
   }
   
   .add-stop {
-    background: #ddffdd;
+    background: #4CAF50;
   }
   
   .add-stop:disabled {

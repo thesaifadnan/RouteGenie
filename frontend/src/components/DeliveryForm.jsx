@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AlgorithmSelector } from './AlgorithmControls';
 import './DeliveryForm.css';
 
 export default function DeliveryForm({ locations, onRouteCalculated, isLoading }) {
@@ -8,89 +7,128 @@ export default function DeliveryForm({ locations, onRouteCalculated, isLoading }
   const [weight, setWeight] = useState('');
   const [algorithm, setAlgorithm] = useState('auto');
 
-  const handleSubmit = async (e) => {
+  const availableStops = locations.filter(loc => loc !== source);
+
+  const handleAddStop = () => {
+    if (availableStops.length > stops.length) {
+      setStops([...stops, availableStops[stops.length]]);
+    }
+  };
+
+  const handleStopChange = (index, value) => {
+    const newStops = [...stops];
+    newStops[index] = value;
+    setStops(newStops);
+  };
+
+  const handleRemoveStop = (index) => {
+    setStops(stops.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const payload = {
+    
+    // Filter out any invalid or empty stops
+    const validStops = stops.filter(stop => 
+      stop && locations.includes(stop)
+    );
+
+    if (!source || validStops.length === 0) {
+      alert('Please select source and at least one valid stop');
+      return;
+    }
+
+    onRouteCalculated({
       source,
-      stops: stops.filter(Boolean),
-      weight: Number(weight),
+      stops: validStops,
+      weight,
       algorithm
-    };
-    onRouteCalculated(payload);
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="delivery-form">
       <div className="form-group">
-        <label>Source:</label>
-        <select 
-          value={source} 
-          onChange={(e) => setSource(e.target.value)}
+        <label>Source Location:</label>
+        <select
+          value={source}
+          onChange={(e) => {
+            setSource(e.target.value);
+            setStops([]); // Reset stops when source changes
+          }}
           required
         >
           <option value="">Select source</option>
-          {Object.keys(locations).map(loc => (
+          {locations.map(loc => (
             <option key={loc} value={loc}>{loc}</option>
           ))}
         </select>
       </div>
 
       <div className="form-group">
-        <label>Stops:</label>
-        {stops.map((stop, i) => (
-          <div key={i} className="stop-row">
+        <label>Delivery Stops:</label>
+        {stops.map((stop, index) => (
+          <div key={index} className="stop-row">
             <select
               value={stop}
-              onChange={(e) => {
-                const newStops = [...stops];
-                newStops[i] = e.target.value;
-                setStops(newStops);
-              }}
+              onChange={(e) => handleStopChange(index, e.target.value)}
               required
             >
               <option value="">Select stop</option>
-              {Object.keys(locations).map(loc => (
-                <option key={loc} value={loc} disabled={loc === source || stops.includes(loc)}>
-                  {loc}
-                </option>
-              ))}
+              {locations
+                .filter(loc => loc !== source && !stops.includes(loc) || loc === stop)
+                .map(loc => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
             </select>
-            <button 
-              type="button" 
-              onClick={() => setStops(stops.filter((_, idx) => idx !== i))}
-              disabled={stops.length <= 1}
+            <button
+              type="button"
+              className="remove-stop"
+              onClick={() => handleRemoveStop(index)}
             >
-              Remove
+              × Remove
             </button>
           </div>
         ))}
-        <button 
-          type="button" 
-          onClick={() => setStops([...stops, ''])}
-          disabled={Object.keys(locations).filter(loc => !stops.includes(loc) && loc !== source).length === 0}
+        <button
+          type="button"
+          className="add-stop"
+          onClick={handleAddStop}
+          disabled={stops.length >= availableStops.length}
         >
-          Add Stop
+          + Add Stop
         </button>
       </div>
 
       <div className="form-group">
-        <label>Weight (kg):</label>
+        <label>Package Weight (kg):</label>
         <input
           type="number"
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
-          min="0.1"
-          step="0.1"
+          min="1"
           required
         />
       </div>
 
-      <AlgorithmSelector 
-        selectedAlgorithm={algorithm}
-        onChange={setAlgorithm}
-      />
+      <div className="form-group">
+        <label>Algorithm:</label>
+        <select
+          value={algorithm}
+          onChange={(e) => setAlgorithm(e.target.value)}
+        >
+          <option value="auto">Auto Select</option>
+          <option value="dijkstra">Dijkstra's</option>
+          <option value="astar">A* Search</option>
+          <option value="greedy">Greedy</option>
+        </select>
+      </div>
 
-      <button type="submit" disabled={isLoading}>
+      <button
+        type="submit"
+        className="submit-button"
+        disabled={isLoading || !source || stops.length === 0}
+      >
         {isLoading ? 'Calculating...' : 'Optimize Route'}
       </button>
     </form>

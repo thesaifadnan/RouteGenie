@@ -1,23 +1,8 @@
 import { graph, locations } from './graph.js';
 
-// Vehicle speeds in km/h
 const vehicleSpeeds = { Bike: 20, Van: 40, Truck: 30 };
 
-// Helper functions
-function haversineDistance(loc1, loc2) {
-  const R = 6371; // Earth radius in km
-  const lat1 = locations[loc1].lat * Math.PI/180;
-  const lat2 = locations[loc2].lat * Math.PI/180;
-  const dLat = (locations[loc2].lat - locations[loc1].lat) * Math.PI/180;
-  const dLon = (locations[loc2].lng - locations[loc1].lng) * Math.PI/180;
-
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1) * Math.cos(lat2) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// 1. Dijkstra's Algorithm (Single Source)
+// 1. Dijkstra's Algorithm (Guaranteed shortest path)
 function dijkstra(start, end) {
   const distances = {};
   const previous = {};
@@ -29,7 +14,7 @@ function dijkstra(start, end) {
   });
 
   while (unvisited.size > 0) {
-    let current = [...unvisited].reduce((min, node) => 
+    const current = [...unvisited].reduce((min, node) => 
       distances[node] < distances[min] ? node : min
     );
 
@@ -46,7 +31,7 @@ function dijkstra(start, end) {
     unvisited.delete(current);
   }
 
-  // Path reconstruction
+  // Reconstruct path
   const path = [];
   let current = end;
   while (current !== start) {
@@ -59,7 +44,7 @@ function dijkstra(start, end) {
   return { path, distance: distances[end] };
 }
 
-// 2. A* Algorithm
+// 2. A* Algorithm (Optimized with heuristic)
 function aStar(start, end) {
   const openSet = new Set([start]);
   const cameFrom = {};
@@ -96,16 +81,14 @@ function aStar(start, end) {
         cameFrom[neighbor] = current;
         gScore[neighbor] = tentativeGScore;
         fScore[neighbor] = gScore[neighbor] + haversineDistance(neighbor, end);
-        if (!openSet.has(neighbor)) {
-          openSet.add(neighbor);
-        }
+        if (!openSet.has(neighbor)) openSet.add(neighbor);
       }
     });
   }
   return null;
 }
 
-// 3. Greedy Nearest Neighbor
+// 3. Greedy TSP Algorithm (Fast approximation)
 function greedyTSP(source, stops) {
   const unvisited = new Set(stops);
   let current = source;
@@ -116,6 +99,7 @@ function greedyTSP(source, stops) {
     let nearest = null;
     let minDist = Infinity;
 
+    // Only consider unvisited stops
     for (const stop of unvisited) {
       const segment = dijkstra(current, stop);
       if (segment && segment.distance < minDist) {
@@ -136,30 +120,26 @@ function greedyTSP(source, stops) {
   return { path, distance: totalDistance };
 }
 
-// 4. Brute Force (for small instances)
+// 4. Brute Force (Optimal for ≤4 stops)
 function bruteForceTSP(source, stops) {
-  if (stops.length === 0) return { path: [source], distance: 0 };
-
-  // Generate all permutations
   const permute = (arr) => {
     if (arr.length <= 1) return [arr];
     const result = [];
     for (let i = 0; i < arr.length; i++) {
       const current = arr[i];
       const remaining = [...arr.slice(0, i), ...arr.slice(i + 1)];
-      const remainingPerms = permute(remaining);
-      for (const perm of remainingPerms) {
+      for (const perm of permute(remaining)) {
         result.push([current, ...perm]);
       }
     }
     return result;
   };
 
-  const allPermutations = permute(stops);
+  const allRoutes = permute(stops);
   let bestPath = null;
   let minDistance = Infinity;
 
-  for (const permutation of allPermutations) {
+  for (const permutation of allRoutes) {
     let current = source;
     let path = [current];
     let totalDistance = 0;
@@ -182,61 +162,71 @@ function bruteForceTSP(source, stops) {
     }
   }
 
-  if (!bestPath) throw new Error('No valid path found');
-  return { path: bestPath, distance: minDistance };
+  return bestPath ? { 
+    path: bestPath, 
+    distance: minDistance,
+    algorithm: "Brute Force" 
+  } : null;
 }
 
-// Main Optimize Function
+// Helper Functions
+function haversineDistance(loc1, loc2) {
+  const R = 6371;
+  const lat1 = locations[loc1].lat * Math.PI/180;
+  const lat2 = locations[loc2].lat * Math.PI/180;
+  const dLat = (locations[loc2].lat - locations[loc1].lat) * Math.PI/180;
+  const dLon = (locations[loc2].lng - locations[loc1].lng) * Math.PI/180;
+
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1) * Math.cos(lat2) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Main Router
 export function optimizeRoute(source, stops, vehicle, algorithm = 'auto') {
-  // Validate inputs
-  if (!source || !stops) throw new Error('Missing required parameters');
-  if (!graph[source]) throw new Error(`Invalid source: ${source}`);
-  
-  const invalidStops = stops.filter(s => !graph[s]);
-  if (invalidStops.length > 0) {
-    throw new Error(`Invalid stops: ${invalidStops.join(', ')}`);
-  }
+  try {
+    // Validate
+    if (!source || !stops) throw new Error("Missing source or stops");
+    if (!graph[source]) throw new Error(`Invalid source: ${source}`);
+    if (stops.some(s => !graph[s])) throw new Error("Invalid stops detected");
 
-  let result;
-  switch (algorithm.toLowerCase()) {
-    case 'dijkstra':
-      result = sequentialDijkstra(source, stops);
-      result.algorithm = "Dijkstra's (Sequential)";
-      break;
-
-    case 'astar':
-      result = aStarTSP(source, stops);
-      result.algorithm = "A* Optimized";
-      break;
-
-    case 'greedy':
-      result = greedyTSP(source, stops);
-      result.algorithm = "Greedy Nearest Neighbor";
-      break;
-
-    default: // 'auto'
-      if (stops.length <= 4) {
-        result = bruteForceTSP(source, stops);
-        result.algorithm = "Brute Force (Optimal)";
-      } else if (stops.length <= 8) {
+    let result;
+    switch (algorithm) {
+      case 'dijkstra':
+        result = sequentialDijkstra(source, stops);
+        result.algorithm = "Dijkstra";
+        break;
+      case 'astar':
         result = aStarTSP(source, stops);
-        result.algorithm = "A* Optimized";
-      } else {
+        result.algorithm = "A*";
+        break;
+      case 'greedy':
         result = greedyTSP(source, stops);
-        result.algorithm = "Greedy (Large Instance)";
-      }
-  }
+        break;
+      default: // auto
+        result = stops.length <= 4 
+          ? bruteForceTSP(source, stops) || greedyTSP(source, stops)
+          : greedyTSP(source, stops);
+        result.algorithm = algorithm === 'auto' ? "Auto-Selected" : result.algorithm;
+    }
 
-  return {
-    path: result.path,
-    distance: result.distance,
-    time: Math.round((result.distance / vehicleSpeeds[vehicle]) * 60),
-    vehicle,
-    algorithm: result.algorithm
-  };
+    if (!result?.path) throw new Error("No valid path found");
+
+    return {
+      path: result.path,
+      distance: result.distance,
+      time: Math.round((result.distance / vehicleSpeeds[vehicle]) * 60),
+      vehicle,
+      algorithm: result.algorithm
+    };
+
+  } catch (error) {
+    return { error: error.message };
+  }
 }
 
-// Helper algorithm implementations
+// Helper: Multi-stop routing
 function sequentialDijkstra(source, stops) {
   let path = [source];
   let totalDistance = 0;
@@ -245,7 +235,6 @@ function sequentialDijkstra(source, stops) {
   for (const stop of stops) {
     const segment = dijkstra(current, stop);
     if (!segment) throw new Error(`No path from ${current} to ${stop}`);
-    
     path = path.concat(segment.path.slice(1));
     totalDistance += segment.distance;
     current = stop;
@@ -262,7 +251,6 @@ function aStarTSP(source, stops) {
   for (const stop of stops) {
     const segment = aStar(current, stop);
     if (!segment) throw new Error(`No path from ${current} to ${stop}`);
-    
     path = path.concat(segment.path.slice(1));
     totalDistance += segment.distance;
     current = stop;
